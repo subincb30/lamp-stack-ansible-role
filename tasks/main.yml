@@ -1,0 +1,99 @@
+---
+# tasks file for lamp
+
+    - name: "Installing webserver packages"
+      yum:
+        name: "{{ webserver_packages }}"
+        state: present
+
+    - name: "Creating configuration file from template"
+      template:
+        src: httpd.conf.j2
+        dest: /etc/httpd/conf/httpd.conf
+
+    - name: "Creating VirtualHost from template"
+      template:
+        src: virtualhost.conf.j2
+        dest: /etc/httpd/conf.d/default.conf
+
+    - name: "Creating document root"
+      file:
+        path: "{{ httpd_doc_root }}"
+        state: directory
+        owner: "{{httpd_owner}}"
+        group: "{{httpd_group}}"
+
+    - name: "Creating php info page"
+      copy:
+        src: info.php
+        dest: "{{ httpd_doc_root }}"
+        owner: "{{httpd_owner}}"
+        group: "{{httpd_group}}"
+
+    - name: "Restarting services"
+      service:
+        name: "{{ item }}"
+        state: restarted
+        enabled: yes
+      with_items:
+        - httpd
+        - php-fpm
+
+    - name: "Installing MariaDB server and pip"
+      yum:
+        name: mariadb105-server, python3-pip
+        state: present
+
+    - name: "MariaDB service restarting"
+      service:
+        name: mariadb
+        state: restarted
+        enabled: yes
+
+
+    - name: "Installing python mysql extension"
+      pip:
+        name: "PyMySQL"
+
+    - name: "Resetting mysql root password"
+      ignore_errors: true
+      community.mysql.mysql_user:
+        login_user: "root"
+        login_password: ""
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        user: "root"
+        password: "{{mysql_root_passwd}}"
+
+    - name: "Removing anonymous users"
+      community.mysql.mysql_user:
+        login_user: "root"
+        login_password: "{{ mysql_root_passwd }}"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        user: ""
+        state: absent
+
+    - name: "Removing test db"
+      community.mysql.mysql_db:
+        login_user: "root"
+        login_password: "{{ mysql_root_passwd }}"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        name: "test"
+        state: absent
+
+    - name: "Creating mysql database {{ mysql_db }}"
+      community.mysql.mysql_db:
+        login_user: "root"
+        login_password: "{{ mysql_root_passwd }}"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        name: "{{ mysql_db }}"
+        state: present
+
+    - name: "Creating mysql database {{ mysql_db }} user {{ mysql_db_user}}"
+      community.mysql.mysql_user:
+        login_user: "root"
+        login_password: "{{ mysql_root_passwd }}"
+        login_unix_socket: /var/lib/mysql/mysql.sock
+        user: "{{ mysql_db_user }}"
+        password: "{{ mysql_db_user_passwd }}"
+        state: present
+        priv: "{{ mysql_db }}.*:ALL"

@@ -1,0 +1,16 @@
+---
+# vars file for lamp
+
+webserver_packages:
+      - httpd
+      - php
+      - php-mysqlnd
+httpd_port: 80
+httpd_my_domain: "wp.subincb.cloud"
+httpd_doc_root: "/var/www/html/subincb.cloud/"
+httpd_owner: "apache"
+httpd_group: "apache"
+mysql_root_passwd: "mysql123!"
+mysql_db: "wp_db"
+mysql_db_user: "wp_db_user"
+mysql_db_user_passwd: "wp123!"
